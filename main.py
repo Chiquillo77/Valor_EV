@@ -1,6 +1,5 @@
-import requests
+import requests, os, time
 from bs4 import BeautifulSoup
-import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -22,7 +21,6 @@ def obtener_picks_ev_plus():
     headers = {"User-Agent": "Mozilla/5.0"}
     resp = requests.get(url, headers=headers)
     soup = BeautifulSoup(resp.text, "html.parser")
-
     picks = soup.select("div.pick-card")
     resultados = []
 
@@ -31,27 +29,19 @@ def obtener_picks_ev_plus():
             nombre = pick.select_one(".pick-meta").get_text(strip=True)
             cuota_texto = pick.select_one(".pick-odds").get_text(strip=True).replace("+", "")
             cuota = 1 + int(cuota_texto) / 100 if cuota_texto.isdigit() else 2.00
-
             prob_texto = pick.select_one(".probability").get_text(strip=True).replace("%", "")
             prob = int(prob_texto) / 100
-
             ev = calcular_ev(prob, cuota)
-
             if prob >= MIN_PROB and cuota >= MIN_ODDS and ev >= MIN_EV:
-                mensaje = (
-                    "📊 Nuevo Pick EV+\n\n"
-                    f"🏟️ {nombre}\n"
-                    f"✅ Probabilidad: {round(prob*100)}%\n"
-                    f"💸 Cuota: {cuota}\n"
-                    f"📈 EV+: {round(ev, 2)}"
-                )
+                mensaje = f"📊 Nuevo Pick EV+\n\n🏟️ {nombre}\n✅ Probabilidad: {round(prob*100)}%\n💸 Cuota: {cuota}\n📈 EV+: {round(ev, 2)}"
                 resultados.append(mensaje)
-        except Exception:
+        except:
             continue
-
     return resultados
 
-# Ejecutar
-picks = obtener_picks_ev_plus()
-for p in picks:
-    enviar_mensaje(p)
+# Loop infinito cada 10 minutos
+while True:
+    picks = obtener_picks_ev_plus()
+    for p in picks:
+        enviar_mensaje(p)
+    time.sleep(600)  # Espera 10 minutos
